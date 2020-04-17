@@ -1,0 +1,396 @@
+---
+title: "Final project"
+author: "Team Sport"
+date: "11/23/2019"
+output: md_document
+---
+```{r}
+setwd("C:/Users/Luca/Desktop")
+getwd()
+
+nba_raw_data <- read.csv("nba.games.stats.csv")
+```
+
+```{r}
+#1.Descriptive statistics (10 points) - show at least two things here
+
+#a.	Describe the data types (numeric vs. categorical) and distributions (you can do this visually or with a package)
+str(nba_raw_data)
+
+hist(nba_raw_data$TeamPoint, xlab = "",  main = "Team Points")
+hist(nba_raw_data$Assists, xlab = "", main = "Assists")
+hist(nba_raw_data$TotalRebounds, xlab = "", main = "Total Rebounds")
+
+```
+
+```{r}
+#b.	Describe the target variable. What are the units? 
+print("Our target variable is WINorLOSS. We are predicting whether a team will win(W) or lose(L) a match")
+```
+
+```{r}
+#c.	Show univariate plots like boxplots, histograms
+
+boxplot(nba_raw_data$Turnovers, xlab = "", main = "Turnovers")
+boxplot(nba_raw_data$Assists, xlab = "", main = "Assists")
+hist(nba_raw_data$FreeThrows, xlab = "", main = "Free Throws")
+hist(nba_raw_data$TeamPoints, xlab = "", main = "Team Points")
+hist(nba_raw_data$Assists, xlab = "", main = "Assists")
+```
+
+
+
+```{r}
+#install.packages("psych")
+library(psych)
+#2.	Exploratory data analysis (10 points) - show at least two things here
+#a.	Correlations/pairwaise correlation (Pearson vs. Spearman)
+
+library(psych)
+
+pairs.panels(nba_raw_data[,c(8:15)], 
+             method = "pearson", # correlation method
+             hist.col = "#00AFBB",
+             density = TRUE,  # show density plots
+             ellipses = TRUE # show correlation ellipses
+)
+
+# spearman correlation
+pairs.panels(nba_raw_data[,c(8:15)], 
+             method = "spearman", # correlation method
+             hist.col = "red",
+             density = TRUE,  # show density plots
+             ellipses = TRUE # show correlation ellipses
+)
+
+```
+
+
+
+
+
+```{r}
+#b.	Bivariate plots like scatterplots
+par(mfrow=c(2,2))
+plot(y=nba_raw_data$FieldGoals,
+     x=nba_raw_data$TeamPoints,
+     xlab="TeamPoints",
+     ylab="FieldGoals",
+     main="TeamPoints vs.FieldGoals",
+     pch=19, # filled in dots
+     col="red") 
+
+plot(y=nba_raw_data$Assists,
+     x=nba_raw_data$TeamPoints,
+     xlab="TeamPoints",
+     ylab="Assists",
+     main="TeamPoints vs.Assists",
+     pch=19, # filled in dots
+     col="skyblue") 
+
+plot(y=nba_raw_data$Turnovers,
+     x=nba_raw_data$TeamPoints,
+     xlab="TeamPoints",
+     ylab="Turnovers",
+     main="TeamPoints vs. Turnovers",
+     pch=19, # filled in dots
+     col="darkgreen") 
+
+
+plot(y=nba_raw_data$Assists,
+     x=nba_raw_data$FieldGoals,
+     xlab="FieldGoals",
+     ylab="Assists",
+     main="FieldGoals vs. Assists",
+     pch=19,
+     col="gray"
+     ) 
+```
+
+
+
+
+
+
+```{r}
+#3.	Probability concepts (10 points)
+#a.	If you have two categories, great! Make a table like this and calculate joint and marginal probabilities.
+
+wlah_table <- prop.table(table(nba_raw_data$Home, nba_raw_data$WINorLOSS))
+addmargins((wlah_table))
+
+#Lets calculate marginal probabilities of winning and losing
+print("P(LOSS): 0.290752 + 0.209248 = 0.5")
+print("P(WIN): 0.209248 + 0.290752 = 0.5")
+
+#Lets calculate joint probabilities
+print("P(WIN⋂HOME): 0.290752")
+print("P(LOSS⋂HOME): 0.209248")
+print("P(LOSS⋂AWAY): 0.290752")
+print("P(WIN⋂AWAY): 0.209248")
+
+
+#Lets calculate conditional probabilities
+print("P(WIN|HOME): 0.290752/(0.290752+0.209248) = 0.290752/0.5 = 58.15% ")
+print("P(LOSS|HOME): 0.209248/(0.290752+0.209248) = 0.209248/0.5 = 41.85%")
+print("P(LOSS|AWAY): 0.290752/(0.290752+0.209248) = 0.290752/0.5 = 58.15% ")
+print("P(WIN|AWAY): 0.209248/(0.290752+0.209248) = 0.209248/0.5 = 41.85%")
+
+```
+
+```{r}
+
+
+#4.	Chi-square test (10 points)
+#a.	Run a chi-square test on the same contingency table and run a test for statistical significance. Could you find one? If not, why do you think the test failed?
+
+
+chisq.test(nba_raw_data$WINorLOSS, nba_raw_data$Home, correct = F)
+
+print("Since the p-value of chi-squred test is less than 0.05, we reject the null hypothesis and conclude that the variables WINorLOSS and Home are related")
+```
+```{r}
+#5.	Data prep (0 points, since you may not have missing data...)
+#a.	Missing values (if any)
+nba_raw_data <- read.csv("nba.games.stats.csv")
+nba_data <- nba_raw_data[c(5,7:41)]
+summary(nba_data)
+
+print("We are excluding the columns 'X', 'Team', 'Game', 'Date' and 'Opponent' because they are not going to contribute any significant information in our final model.")
+
+```
+
+```{r}
+
+#6.	Decide on which regression you will use (must do one of these). (0 points - just pick one)
+print("We are going to use multiple logistic regression. Our target is a binary target")
+```
+
+```{r}
+#7.	Proficiency in stepwise regression (40 points)
+#a.	Fit a full model
+fit_full <- glm(nba_data$WINorLOSS~., data = nba_data,
+                family = binomial(link="logit"))
+
+summary(fit_full)
+```
+
+```{r}
+#b.	Fit a null model
+fit_null <- glm(WINorLOSS~1, data = nba_data, 
+                family = binomial(link="logit"))
+
+summary(fit_null)
+```
+
+```{r}
+#c.	Using some form of stepwise regression (forward, backward, both), fit a reduced model.
+
+#Lets build a model using VIF analysis
+library(car)
+fit_for_vif <- glm(nba_data$WINorLOSS~.-Opp.FreeThrows-FreeThrows, data = nba_data, family = binomial(link="logit"))
+
+#Based on VIF analysis, time to eliminate variables having VIF values greater than 5 one by one
+
+fit_for_vif <- update(fit_for_vif,.~.-Opp.FieldGoals)
+fit_for_vif <- update(fit_for_vif,.~.-FieldGoals)
+fit_for_vif <- update(fit_for_vif,.~.-OpponentPoints)
+fit_for_vif <- update(fit_for_vif,.~.-TeamPoints)
+fit_for_vif <- update(fit_for_vif,.~.-Opp.FieldGoals.)
+fit_for_vif <- update(fit_for_vif,.~.-Opp.3PointShots)
+fit_for_vif <- update(fit_for_vif,.~.-X3PointShots)
+fit_for_vif <- update(fit_for_vif,.~.-Opp.FieldGoalsAttempted)
+fit_for_vif <- update(fit_for_vif,.~.-Opp.TotalRebounds)
+fit_for_vif <- update(fit_for_vif,.~.-TotalRebounds)
+
+vif(fit_for_vif)
+summary(fit_for_vif)
+
+#Lets eliminate variables having p-value greater than 0.05(Assuming 95% confidence)
+fit_for_p <- update(fit_for_vif,.~.-Opp.Blocks)
+fit_for_p <- update(fit_for_p,.~.-Steals)
+
+summary(fit_for_p)
+
+```
+
+```{r}
+#Lets build a model using forward stepwise regression
+stepforward_null <- step( fit_null, scope=list(lower=formula(fit_null),upper=formula(fit_for_p)),direction="forward")
+summary(stepforward_null)
+
+#Lets build a model using backward stepwise regression
+stepback_full <- step(fit_for_p)
+summary(stepback_full)
+
+#Lets build a model using mixed stepwise regression
+stepboth_full <- step(fit_for_p, scope=list(lower=formula(fit_null),upper=formula(fit_for_p)),direction="both")
+summary(stepboth_full)
+```
+
+
+```{r}
+#d.	Compare the model output and note any trends that you see.
+print("On comparing the model outputs, we can observe that the variable FieldGoals always has the most influence on determining the result of the match. Also, the variable Opp.3PointShots. increases the chances of losing the match. ")
+
+```
+
+```{r}
+#8.	Model interpretation (30 points)
+#a.	For each model you fit, interpret at least two coefficients. What trends do you see in the model output (parameter estimates, p-values, etc)?
+
+print("For all the models that we built, we can claim that the variable 'FieldGoals.' increases the log odds of winning a match by 44.089779 units. The variable 'Opp.3PointShots.' decreases the log odds of winning a match by 14.279671 units.")
+print("We can see that getting an assist increases the log odds of winning by only 0.06 units. However, if the opponents get an assist, it decreases the log odds of us winning the match by 0.27 units. This indicates that a team must prevent the opposition getting more assists and focus more on defense.")
+
+
+```
+
+```{r}
+#9.	Model fit diagnostics for each model you fit (30 points)
+#a.	Actual vs. predicted plot for numeric (add confidence intervals and prediction intervals), analyze model fit and residuals (MAE, RMSE, R2)
+#b.	Confusion matrix for binary (TPR, TNR, FPR, FNR)
+library(SDMTools)
+nba_data$flag[nba_data$WINorLOSS=="W"] <- 1 
+nba_data$flag[nba_data$WINorLOSS=="L"] <- 0 
+
+
+options("scipen"=100, "digits"=4)
+nba_data$preds <- fit_for_p$fitted.values
+
+nba_data$preds[nba_data$preds>0.5] <- "1"
+nba_data$preds[nba_data$preds<=0.5] <- "0"
+nba_data$preds <- as.numeric(nba_data$preds)
+
+
+#Lets create a confusion matrix for model obtained using vif analysis
+cm_vif <- confusion.matrix(nba_data$flag, nba_data$preds)
+cm_vif
+
+paste0("TPR:",cm_vif[2,2]/(cm_vif[1,2]+cm_vif[2,2])*100, "%")
+paste0("TNR:", cm_vif[1,1]/(cm_vif[1,1]+cm_vif[2,1])*100, "%")
+paste0("FPR:", cm_vif[2,1]/(cm_vif[1,1]+cm_vif[2,1])*100, "%")
+paste0("FNR:", cm_vif[1,2]/(cm_vif[1,2]+cm_vif[2,2])*100, "%")
+```
+
+
+
+```{r}
+#Lets create a confusion matrix for model obtained using forward stepwise regression
+
+nba_data$preds_forward <- stepforward_null$fitted.values
+
+nba_data$preds_forward[nba_data$preds_forward>0.5] <- "1"
+nba_data$preds_forward[nba_data$preds_forward<=0.5] <- "0"
+nba_data$preds_forward <- as.numeric(nba_data$preds_forward)
+
+cm_forward <- confusion.matrix(nba_data$flag, nba_data$preds_forward)
+cm_forward
+
+paste0("TPR:",cm_forward[2,2]/(cm_forward[1,2]+cm_forward[2,2])*100, "%")
+paste0("TNR:", cm_forward[1,1]/(cm_forward[1,1]+cm_forward[2,1])*100, "%")
+paste0("FPR:", cm_forward[2,1]/(cm_forward[1,1]+cm_forward[2,1])*100, "%")
+paste0("FNR:", cm_forward[1,2]/(cm_forward[1,2]+cm_forward[2,2])*100, "%")
+
+
+```
+
+```{r}
+#Lets create a confusion matrix for model obtained using backward stepwise regression
+
+nba_data$preds_backward <- stepback_full$fitted.values
+
+nba_data$preds_backward[nba_data$preds_backward>0.5] <- "1"
+nba_data$preds_backward[nba_data$preds_backward<=0.5] <- "0"
+nba_data$preds_backward <- as.numeric(nba_data$preds_backward)
+
+cm_backward <- confusion.matrix(nba_data$flag, nba_data$preds_backward)
+cm_backward
+
+paste0("TPR:",cm_backward[2,2]/(cm_backward[1,2]+cm_backward[2,2])*100, "%")
+paste0("TNR:", cm_backward[1,1]/(cm_backward[1,1]+cm_backward[2,1])*100, "%")
+paste0("FPR:", cm_backward[2,1]/(cm_backward[1,1]+cm_backward[2,1])*100, "%")
+paste0("FNR:", cm_backward[1,2]/(cm_backward[1,2]+cm_backward[2,2])*100, "%")
+
+```
+
+
+```{r}
+
+#Lets create a confusion matrix for model obtained using mixed stepwise regression
+nba_data$preds_both <- stepboth_full$fitted.values
+
+nba_data$preds_both[nba_data$preds_both>0.5] <- "1"
+nba_data$preds_both[nba_data$preds_both<=0.5] <- "0"
+nba_data$preds_both <- as.numeric(nba_data$preds_both)
+
+cm_both <- confusion.matrix(nba_data$flag, nba_data$preds_both)
+cm_both
+
+paste0("TPR:",cm_both[2,2]/(cm_both[1,2]+cm_both[2,2])*100, "%")
+paste0("TNR:", cm_both[1,1]/(cm_both[1,1]+cm_both[2,1])*100, "%")
+paste0("FPR:", cm_both[2,1]/(cm_both[1,1]+cm_both[2,1])*100, "%")
+paste0("FNR:", cm_both[1,2]/(cm_both[1,2]+cm_both[2,2])*100, "%")
+
+```
+
+
+
+```{r}
+
+#10.	Model comparison for full model and reduced model (10 points)
+#a.	AIC, BIC
+#i.	Do you reach the same conclusion using both of these methods?
+
+#Lets compare the models using AIC
+AIC(fit_for_p)
+AIC(stepforward_null)
+AIC(stepback_full)
+AIC(stepboth_full)
+
+#We can observe that AIC of all the models obtained using stepwise regression is the same, so lets compare the model obtained using vif analysis and p value elimination 'fit_for_p' with 'stepback_full'.
+AIC(fit_for_p, stepback_full)
+
+```
+
+```{r}
+#Lets compare the models using BIC
+BIC(fit_for_p)
+BIC(stepforward_null)
+BIC(stepback_full)
+BIC(stepboth_full)
+
+#We can observe that BIC of all the models obtained using stepwise regression is the same, so lets compare the model obtained using vif analysis and p value elimination 'fit_for_p' with 'stepback_full'.
+
+BIC(fit_for_p, stepback_full)
+
+
+
+```
+```{r}
+
+
+print("We can observe from the results obtained above that the AIC and BIC values of model obtained using backward stepwise regression 'stepback_full' is less than the model obtained using vif analysis and p value 'fit_for_p'. But the model 'fit_for_p' contains the variable 'Home' which plays a significant role in determining the result of a match. So considering domain knowledge, we are claiming that 'fit_for_p' is a better model ")
+
+
+
+
+
+
+
+
+
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
